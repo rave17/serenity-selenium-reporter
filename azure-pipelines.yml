@@ -1,0 +1,55 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: branch
+    displayName: 'Seleccionar branch'
+    type: string
+    
+
+  - name: tag
+    displayName: 'Ingresar tag para ejecución (ej: @login)'
+    type: string
+    default: '@login'
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  SERENITY_ENV: 'dev'
+
+stages:
+  - stage: RunTests
+    displayName: Run Serenity BDD Tests
+    jobs:
+      - job: RunTestsJob
+        steps:
+          - script: |
+              echo "Clonando rama seleccionada: ${{ parameters.branch }}"
+              git clone $(Build.Repository.Uri) --branch ${{ parameters.branch }} repo
+              cd repo
+            displayName: Checkout del repositorio
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '11'
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: Cache@2
+            inputs:
+              key: 'maven | "$(Agent.OS)" | **/pom.xml'
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+              path: '$(UserProfile)\.m2\repository'
+
+          - script: |
+              cd repo
+              mvn clean verify -Denvironment=dev -Dcucumber.filter.tags="${{ parameters.tag }}"
+            displayName: Ejecutar pruebas con Maven
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publicar Reporte Serenity en Artifacts AzureDevops'
+            inputs:
+              pathToPublish: 'repo\target\site\serenity'
+              artifactName: 'serenity-report'
+              publishLocation: 'Container'
