@@ -5,7 +5,6 @@ parameters:
   - name: branch
     displayName: 'Seleccionar branch'
     type: string
-    
 
   - name: tag
     displayName: 'Ingresar tag para ejecución (ej: @login)'
@@ -29,11 +28,13 @@ stages:
               git clone $(Build.Repository.Uri) --branch ${{ parameters.branch }} repo
               cd repo
             displayName: Checkout del repositorio
+
           - task: JavaToolInstaller@0
+            displayName: 'Instalar Temurin JDK 17'
             inputs:
-              versionSpec: '11'
+              versionSpec: '17'
               jdkArchitectureOption: 'x64'
-              jdkSourceOption: 'PreInstalled'
+              jdkSourceOption: 'AzureStorage'
 
           - task: Cache@2
             inputs:
